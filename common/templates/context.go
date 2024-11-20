@@ -673,7 +673,7 @@ func baseContextFuncs(c *Context) {
 	c.addContextFunc("addReactions", c.tmplAddReactions)
 	c.addContextFunc("addResponseReactions", c.tmplAddResponseReactions)
 
-	c.addContextFunc("getMessageReactions", c.tmplGetMessageReactions)
+	c.addContextFunc("whoReated", c.tmplGetMessageReactionsUserList)
 	
 	c.addContextFunc("deleteAllMessageReactions", c.tmplDelAllMessageReactions)
 	c.addContextFunc("deleteMessageReaction", c.tmplDelMessageReaction)
