@@ -86,6 +86,71 @@ func (c *Context) tmplSendDM(s ...interface{}) string {
 	return ""
 }
 
+func (c *Context) tmplSendDMTo(target interface{}, s ...interface{}) string {
+	if len(s) < 1 || c.IncreaseCheckCallCounter("send_dm", 1) || c.IncreaseCheckGenericAPICall() || c.MS == nil || c.ExecutedFrom == ExecutedFromLeave {
+		return ""
+	}
+
+	msgSend := &discordgo.MessageSend{
+		AllowedMentions: discordgo.AllowedMentions{
+			Parse: []discordgo.AllowedMentionType{discordgo.AllowedMentionTypeUsers},
+		},
+	}
+
+	switch t := s[0].(type) {
+	case *discordgo.MessageEmbed:
+		msgSend.Embeds = []*discordgo.MessageEmbed{t}
+	case []*discordgo.MessageEmbed:
+		msgSend.Embeds = t
+	case *discordgo.MessageSend:
+		msgSend = t
+		if (len(msgSend.Embeds) == 0 && strings.TrimSpace(msgSend.Content) == "") && (msgSend.File == nil) && (len(msgSend.Components) == 0) {
+			return ""
+		}
+	default:
+		msgSend.Content = fmt.Sprint(s...)
+	}
+	serverInfo := []discordgo.MessageComponent{
+		discordgo.ActionsRow{
+			Components: []discordgo.MessageComponent{
+				discordgo.Button{
+					Label:    "Show Server Info",
+					Style:    discordgo.PrimaryButton,
+					Emoji:    &discordgo.ComponentEmoji{Name: "📬"},
+					CustomID: fmt.Sprintf("DM_%d", c.GS.ID),
+				},
+			},
+		},
+	}
+	if len(msgSend.Components) >= 5 {
+		msgSend.Components = msgSend.Components[:4]
+	}
+	msgSend.Components = append(serverInfo, msgSend.Components...)
+
+	
+	targetID := TargetUserID(target)
+	if targetID == 0 {
+		return "La cible n'a pas été trouvée"
+	}
+
+	ms, err := bot.GetMember(c.GS.ID, targetID)
+	if err != nil {
+		return "Erreur : " + err.Error()
+	}
+
+	if ms == nil {
+		return "La cible n'est pas un membre du serveur"
+	}
+
+	channel, err := common.BotSession.UserChannelCreate(targetID)
+
+	if err != nil {
+		return "Erreur lors de la création du channel : " + err.Error()
+	}
+	_, _ = common.BotSession.ChannelMessageSendComplex(channel.ID, msgSend)
+	return ""
+}
+
 func (c *Context) baseChannelArg(v interface{}) *dstate.ChannelState {
 	// Look for the channel
 	if v == nil && c.CurrentFrame.CS != nil {
