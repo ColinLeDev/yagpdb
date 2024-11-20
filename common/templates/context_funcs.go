@@ -1658,6 +1658,24 @@ func (c *Context) tmplAddResponseReactions(values ...reflect.Value) (reflect.Val
 	return callVariadic(f, true, values...)
 }
 
+func (c *Context) tmplGetMessageReactions(channel, message interface{}, emoji string, limit int, after interface{}) ([]*discordgo.User, error) {
+	// MessageReactions(channelID, messageID int64, emoji string, limit int, before, after int64) (st []*User, err error) 
+	cID := c.ChannelArgNoDM(channel)
+	if cID == 0 {
+		return nil, errors.New("unknown channel")
+	}
+
+	mID := ToInt64(message)
+	afterID := ToInt64(after)
+
+	users, err := common.BotSession.MessageReactions(cID, mID, emoji, limit, 0, afterID)
+	if err != nil {
+		return nil, err
+	}
+	
+	return users, nil
+}
+
 func (c *Context) tmplAddMessageReactions(values ...reflect.Value) (reflect.Value, error) {
 	f := func(args []reflect.Value) (reflect.Value, error) {
 		if len(args) < 2 {
