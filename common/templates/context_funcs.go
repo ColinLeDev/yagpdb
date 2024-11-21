@@ -1982,6 +1982,16 @@ func (c *Context) tmplOnlineCountBots() (int, error) {
 	return 0, nil
 }
 
+// DEPRECATED: this function will likely not return
+func (c *Context) tmplGuildInvites() ([]*discordgo.Invite, error) {
+	invites, err := common.BotSession.GuildInvites(c.GS.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return invites, nil
+}
+
 func (c *Context) tmplEditNickname(Nickname string) (string, error) {
 	if c.IncreaseCheckCallCounter("edit_nick", 2) {
 		return "", ErrTooManyCalls

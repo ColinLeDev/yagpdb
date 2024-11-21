@@ -767,6 +767,7 @@ func baseContextFuncs(c *Context) {
 	// Miscellaneous functions
 	c.addContextFunc("onlineCount", c.tmplOnlineCount)
 	c.addContextFunc("onlineCountBots", c.tmplOnlineCountBots)
+	c.addContextFunc("getGuildInvites", c.tmplGuildInvites)
 
 	c.addContextFunc("sleep", c.tmplSleep)
 	c.addContextFunc("sort", c.tmplSort)
