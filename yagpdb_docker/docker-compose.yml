@@ -27,7 +27,7 @@ services:
       - "-all"
       - "-pa"
       - "-exthttps=false"
-      - "-https=true"
+      - "-https=false"
     depends_on:
       - redis
     networks:
