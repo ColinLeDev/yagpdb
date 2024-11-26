@@ -649,7 +649,8 @@ func baseContextFuncs(c *Context) {
 	c.addContextFunc("deleteMessage", c.tmplDelMessage)
 	c.addContextFunc("deleteResponse", c.tmplDelResponse)
 	c.addContextFunc("deleteTrigger", c.tmplDelTrigger)
-
+	
+	c.addContextFunc("getMessages", c.tmplGetMessages)
 	c.addContextFunc("editMessage", c.tmplEditMessage(true))
 	c.addContextFunc("editMessageNoEscape", c.tmplEditMessage(false))
 	c.addContextFunc("getMessage", c.tmplGetMessage)
