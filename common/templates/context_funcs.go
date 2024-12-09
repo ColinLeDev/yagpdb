@@ -1767,7 +1767,7 @@ func (c *Context) tmplAddResponseReactions(values ...reflect.Value) (reflect.Val
 	return callVariadic(f, true, values...)
 }
 
-func (c *Context) tmplGetMessageReactionsUserList(channel, message interface{}, emoji string, limit int, after interface{}) ([]*discordgo.User, error) {
+func (c *Context) tmplGetMessageReactionsUserList(channel, message interface{}, emoji string, limit int, after int64) ([]*discordgo.User, error) {
 	// MessageReactions(channelID, messageID int64, emoji string, limit int, before, after int64) (st []*User, err error) 
 	cID := c.ChannelArgNoDM(channel)
 	if cID == 0 {
@@ -1775,9 +1775,8 @@ func (c *Context) tmplGetMessageReactionsUserList(channel, message interface{}, 
 	}
 
 	mID := ToInt64(message)
-	afterID := ToInt64(after)
 
-	users, err := common.BotSession.MessageReactions(cID, mID, emoji, limit, 0, afterID)
+	users, err := common.BotSession.MessageReactions(cID, mID, emoji, limit, 0, after)
 	if err != nil {
 		return nil, err
 	}
