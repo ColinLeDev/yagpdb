@@ -615,10 +615,14 @@ func (c *Context) IncreaseCheckCallCounterPremium(key string, normalLimit, premi
 }
 
 func (c *Context) IncreaseCheckGenericAPICall() bool {
-	if c.ExecutedFrom == ExecutedFromEvalCC {
-		return c.IncreaseCheckCallCounter("api_call", 20)
+	factor := 1
+	if c.IsPremium {
+		factor = 10
 	}
-	return c.IncreaseCheckCallCounter("api_call", 100)
+	if c.ExecutedFrom == ExecutedFromEvalCC {
+		return c.IncreaseCheckCallCounter("api_call", 20*factor)
+	}
+	return c.IncreaseCheckCallCounter("api_call", 100*factor)
 }
 
 func (c *Context) LogEntry() *logrus.Entry {
