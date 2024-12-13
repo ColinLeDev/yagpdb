@@ -1,0 +1,58 @@
+volumes:
+  db:
+  redis:
+  cert_cache:
+  soundboard:
+
+networks:
+  default:
+
+services:
+  app:
+    # We don't provide an official image, but there is a community-made image you can try:
+    #  - teyker/yagpdb (https://hub.docker.com/r/teyker/yagpdb)
+    #
+    # Note that we do not take responsibility for anything that happens as a result of using
+    # the image above. uncomment the below line in case your want to put your own image.
+    #image: PUT_YOUR_OWN_IMAGE_HERE
+    build:
+      context: ../
+      dockerfile: yagpdb_docker/Dockerfile
+    restart: unless-stopped
+    command:
+      # - "/app/yagpdb"
+      - "-all"
+      - "-pa"
+      - "-exthttps=false"
+      - "-https=true"
+    depends_on:
+      - redis
+      - db
+    networks:
+      - default
+    volumes:
+      - cert_cache:/app/cert
+      - soundboard:/app/soundboard
+    ports:
+      - '80:80'
+      - '443:443'
+    env_file:
+      - app.env
+
+  redis:
+    image: docker.io/redis
+    restart: unless-stopped
+    networks:
+      - default
+    volumes:
+      - redis:/data
+
+  db:
+    image: docker.io/postgres:11
+    restart: unless-stopped
+    volumes:
+      - db:/var/lib/postgresql/data
+    networks:
+      - default
+    env_file:
+      - db.env
