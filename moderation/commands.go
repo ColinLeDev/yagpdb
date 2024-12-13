@@ -1037,17 +1037,24 @@ var ModerationCommands = []*commands.YAGCommand{
 				return nil, err
 			}
 
-			warning, err := models.ModerationWarnings(
-				models.ModerationWarningWhere.ID.EQ(warningID),
-				// don't get warning from other servers, even if ID is correct
-				models.ModerationWarningWhere.GuildID.EQ(parsed.GuildData.GS.ID),
-			).OneG(parsed.Context())
-			if err != nil {
-				return fmt.Sprintf("Could not find warning with ID `%d`", warningID), nil
+			warningID := parsed.Args[0].Int()
+
+			// Using that if we need to send to modlog
+			var warning *models.ModerationWarning
+			if config.UnwarnSendToModlog && config.ActionChannel != 0 {
+				warning, err = models.ModerationWarnings(
+					models.ModerationWarningWhere.ID.EQ(warningID),
+					// don't get warning from other servers, even if ID is correct
+					models.ModerationWarningWhere.GuildID.EQ(parsed.GuildData.GS.ID),
+				).OneG(parsed.Context())
+				if err != nil {
+					return fmt.Sprintf("Could not find warning with ID `%d`", warningID), nil
+				}
 			}
+
 			numDeleted, err := models.ModerationWarnings(
 				models.ModerationWarningWhere.ID.EQ(warningID),
-				// Recheck the server, even if it's already checked
+				// don't delete warnings from other servers, even if ID is correct
 				models.ModerationWarningWhere.GuildID.EQ(parsed.GuildData.GS.ID),
 			).DeleteAllG(parsed.Context())
 			if err != nil {
