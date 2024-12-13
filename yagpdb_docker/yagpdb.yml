@@ -1,0 +1,55 @@
+volumes:
+  # yagpdb_docker_redis:
+  #   external: true
+  yagpdb_docker_cert_cache:
+    external: true
+  yagpdb_docker_soundboard:
+    external: true
+  # yagpdb:
+  #   external: true
+
+networks:
+  web:
+    external: true
+  db_redis:
+    external: true
+  db_postgres:
+    external: true
+
+services:
+  app:
+    #image: PUT_YOUR_OWN_IMAGE_HERE
+    container_name: yagpdb
+    build:
+      context: ../
+      dockerfile: yagpdb_docker/Dockerfile
+    restart: unless-stopped
+    command:
+      # - "/app/yagpdb"
+      - "-all"
+      - "-pa"
+      - "-exthttps=false"
+      - "-https=false"
+    # depends_on:
+    #   - redis
+    networks:
+      - web
+      - db_redis
+      - db_postgres
+    volumes:
+      - yagpdb_docker_cert_cache:/app/cert
+      - yagpdb_docker_soundboard:/app/soundboard
+    # ports:
+    #   - '80:80'
+    #   - '443:443'
+    env_file:
+      - env_yagpdb.env
+
+  # redis:
+  #   image: docker.io/redis
+  #   container_name: redis
+  #   restart: unless-stopped
+  #   networks:
+  #     - net_redis
+  #   volumes:
+  #     - yagpdb_docker_redis:/data
