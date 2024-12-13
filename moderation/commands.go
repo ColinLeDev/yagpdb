@@ -1017,7 +1017,8 @@ var ModerationCommands = []*commands.YAGCommand{
 		RequiredArgs:  1,
 		Arguments: []*dcmd.ArgDef{
 			{Name: "WarningId", Type: dcmd.Int},
-			{Name: "Reason", Type: dcmd.String},
+			{Name: "Id", Type: dcmd.Int},
+			{Name: "Reason", Type: dcmd.String, Default: ""},
 		},
 		RequiredDiscordPermsHelp: "ManageMessages or ManageGuild",
 		SlashCommandEnabled:      true,
@@ -1044,8 +1045,11 @@ var ModerationCommands = []*commands.YAGCommand{
 			if err != nil {
 				return fmt.Sprintf("Could not find warning with ID `%d`", warningID), nil
 			}
-
-			numDeleted, err := warning.DeleteG(parsed.Context())
+			numDeleted, err := models.ModerationWarnings(
+				models.ModerationWarningWhere.ID.EQ(warningID),
+				// Recheck the server, even if it's already checked
+				models.ModerationWarningWhere.GuildID.EQ(parsed.GuildData.GS.ID),
+			).DeleteAllG(parsed.Context())
 			if err != nil {
 				return "Failed deleting warning", err
 			}
