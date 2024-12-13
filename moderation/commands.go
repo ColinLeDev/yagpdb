@@ -1018,7 +1018,7 @@ var ModerationCommands = []*commands.YAGCommand{
 		Arguments: []*dcmd.ArgDef{
 			{Name: "WarningId", Type: dcmd.Int},
 			{Name: "Id", Type: dcmd.Int},
-			{Name: "Reason", Type: dcmd.String, Default: ""},
+			{Name: "Reason", Type: dcmd.String},
 		},
 		RequiredDiscordPermsHelp: "ManageMessages or ManageGuild",
 		SlashCommandEnabled:      true,
@@ -1041,7 +1041,7 @@ var ModerationCommands = []*commands.YAGCommand{
 
 			// Using that if we need to send to modlog
 			var warning *models.ModerationWarning
-			if config.UnwarnSendToModlog && config.ActionChannel != 0 {
+			if config.DelwarnSendToModlog && config.ActionChannel != 0 {
 				warning, err = models.ModerationWarnings(
 					models.ModerationWarningWhere.ID.EQ(warningID),
 					// don't get warning from other servers, even if ID is correct
