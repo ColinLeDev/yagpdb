@@ -1017,7 +1017,7 @@ var ModerationCommands = []*commands.YAGCommand{
 		RequiredArgs:  1,
 		Arguments: []*dcmd.ArgDef{
 			{Name: "WarningId", Type: dcmd.Int},
-			{Name: "Reason", Type: dcmd.String},
+			{Name: "Reason", Type: dcmd.String, Default: ""},
 		},
 		RequiredDiscordPermsHelp: "ManageMessages or ManageGuild",
 		SlashCommandEnabled:      true,
