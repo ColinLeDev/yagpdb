@@ -180,21 +180,21 @@ func (alc *NotLinkTrigger) Description() (description string) {
 	return "Triggers when a message not contains any valid link"
 }
 
-func (alc *NotLinkTrigger) UserSettings() []*SettingDef {
+func (lc *LinkTrigger) UserSettings() []*SettingDef {
 	return []*SettingDef{}
 }
 
-func (alc *NotLinkTrigger) CheckMessage(triggerCtx *TriggerContext, cs *dstate.ChannelState, m *discordgo.Message) (bool, error) {
+func (lc *LinkTrigger) CheckMessage(triggerCtx *TriggerContext, cs *dstate.ChannelState, m *discordgo.Message) (bool, error) {
 	for _, content := range m.GetMessageContents() {
 		if common.LinkRegex.MatchString(common.ForwardSlashReplacer.Replace(content)) {
-			return false, nil
+			return lc.Presence, nil
 		}
 	}
-	return true, nil
+	return !lc.Presence, nil
 
 }
 
-func (alc *NotLinkTrigger) MergeDuplicates(data []interface{}) interface{} {
+func (lc *LinkTrigger) MergeDuplicates(data []interface{}) interface{} {
 	return data[0] // no point in having duplicates of this
 }
 
