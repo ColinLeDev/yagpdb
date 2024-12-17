@@ -1034,7 +1034,7 @@ func (c *Context) tmplGetMessages(channel, before, after interface{}) (messages 
 
 		for i,m := range batch {
 			messages = append(messages, m.ID)
-			if m.ID == aID {
+			if m.ID <= aID {
 				return messages, nil
 			}
 			if i == len(batch) - 1 {
