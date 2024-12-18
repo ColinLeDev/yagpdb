@@ -86,6 +86,71 @@ func (c *Context) tmplSendDM(s ...interface{}) string {
 	return ""
 }
 
+func (c *Context) tmplSendDMTo(target interface{}, s ...interface{}) string {
+	if len(s) < 1 || c.IncreaseCheckCallCounter("send_dm", 1) || c.IncreaseCheckGenericAPICall() || c.MS == nil || c.ExecutedFrom == ExecutedFromLeave {
+		return ""
+	}
+
+	msgSend := &discordgo.MessageSend{
+		AllowedMentions: discordgo.AllowedMentions{
+			Parse: []discordgo.AllowedMentionType{discordgo.AllowedMentionTypeUsers},
+		},
+	}
+
+	switch t := s[0].(type) {
+	case *discordgo.MessageEmbed:
+		msgSend.Embeds = []*discordgo.MessageEmbed{t}
+	case []*discordgo.MessageEmbed:
+		msgSend.Embeds = t
+	case *discordgo.MessageSend:
+		msgSend = t
+		if (len(msgSend.Embeds) == 0 && strings.TrimSpace(msgSend.Content) == "") && (msgSend.File == nil) && (len(msgSend.Components) == 0) {
+			return ""
+		}
+	default:
+		msgSend.Content = fmt.Sprint(s...)
+	}
+	serverInfo := []discordgo.MessageComponent{
+		discordgo.ActionsRow{
+			Components: []discordgo.MessageComponent{
+				discordgo.Button{
+					Label:    "Show Server Info",
+					Style:    discordgo.PrimaryButton,
+					Emoji:    &discordgo.ComponentEmoji{Name: "📬"},
+					CustomID: fmt.Sprintf("DM_%d", c.GS.ID),
+				},
+			},
+		},
+	}
+	if len(msgSend.Components) >= 5 {
+		msgSend.Components = msgSend.Components[:4]
+	}
+	msgSend.Components = append(serverInfo, msgSend.Components...)
+
+	
+	targetID := TargetUserID(target)
+	if targetID == 0 {
+		return "La cible n'a pas été trouvée"
+	}
+
+	ms, err := bot.GetMember(c.GS.ID, targetID)
+	if err != nil {
+		return "Erreur : " + err.Error()
+	}
+
+	if ms == nil {
+		return "La cible n'est pas un membre du serveur"
+	}
+
+	channel, err := common.BotSession.UserChannelCreate(targetID)
+
+	if err != nil {
+		return "Erreur lors de la création du channel : " + err.Error()
+	}
+	_, _ = common.BotSession.ChannelMessageSendComplex(channel.ID, msgSend)
+	return ""
+}
+
 func (c *Context) baseChannelArg(v interface{}) *dstate.ChannelState {
 	// Look for the channel
 	if v == nil && c.CurrentFrame.CS != nil {
@@ -936,6 +1001,50 @@ func (c *Context) tmplGetMessage(channel, msgID interface{}) (*discordgo.Message
 	return message, nil
 }
 
+func (c *Context) tmplGetMessages(channel, before, after interface{}) (messages []int64, err error) {
+	if c.IncreaseCheckGenericAPICall() {
+		return nil, ErrTooManyAPICalls
+	}
+
+	cID := c.ChannelArgNoDM(channel)
+	if cID == 0 {
+		return nil, nil
+	}
+	bID := ToInt64(before)
+	if before == nil {
+		bID = 0
+	}
+	aID := ToInt64(after)
+	if after == nil {
+		return nil, errors.New("after cannot be nil")
+	}
+	
+	batchLimit := 10
+	batchN := 0
+	
+	for batchN < batchLimit {
+		batch, error := common.BotSession.ChannelMessages(cID, 100, bID, 0, 0)
+		batchN = batchN + 1
+		if batch == nil {
+			return messages, nil
+		}
+		if error != nil {
+			return nil, error
+		}
+
+		for i,m := range batch {
+			messages = append(messages, m.ID)
+			if m.ID <= aID {
+				return messages, nil
+			}
+			if i == len(batch) - 1 {
+				bID = m.ID
+			}
+		}
+	}
+	return messages, nil
+}
+
 func (c *Context) tmplGetMember(target interface{}) (*discordgo.Member, error) {
 	if c.IncreaseCheckGenericAPICall() {
 		return nil, ErrTooManyAPICalls
@@ -1658,6 +1767,23 @@ func (c *Context) tmplAddResponseReactions(values ...reflect.Value) (reflect.Val
 	return callVariadic(f, true, values...)
 }
 
+func (c *Context) tmplGetMessageReactionsUserList(channel, message interface{}, emoji string, limit int, after int64) ([]*discordgo.User, error) {
+	// MessageReactions(channelID, messageID int64, emoji string, limit int, before, after int64) (st []*User, err error) 
+	cID := c.ChannelArgNoDM(channel)
+	if cID == 0 {
+		return nil, errors.New("unknown channel")
+	}
+
+	mID := ToInt64(message)
+
+	users, err := common.BotSession.MessageReactions(cID, mID, emoji, limit, 0, after)
+	if err != nil {
+		return nil, err
+	}
+	
+	return users, nil
+}
+
 func (c *Context) tmplAddMessageReactions(values ...reflect.Value) (reflect.Value, error) {
 	f := func(args []reflect.Value) (reflect.Value, error) {
 		if len(args) < 2 {
@@ -1897,6 +2023,16 @@ func (c *Context) tmplOnlineCountBots() (int, error) {
 	// }
 
 	return 0, nil
+}
+
+// DEPRECATED: this function will likely not return
+func (c *Context) tmplGuildInvites() ([]*discordgo.Invite, error) {
+	invites, err := common.BotSession.GuildInvites(c.GS.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return invites, nil
 }
 
 func (c *Context) tmplEditNickname(Nickname string) (string, error) {
