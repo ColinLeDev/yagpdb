@@ -117,43 +117,43 @@ type LinkTrigger struct{
 	Presence bool
 }
 
-func (lc *LinkTrigger) Kind() RulePartType {
+func (alc *LinkTrigger) Kind() RulePartType {
 	return RulePartTrigger
 }
 
-func (lc *LinkTrigger) DataType() interface{} {
+func (alc *LinkTrigger) DataType() interface{} {
 	return nil
 }
 
-func (lc *LinkTrigger) Name() (name string) {
-	if lc.Presence {
+func (alc *LinkTrigger) Name() (name string) {
+	if alc.Presence {
 		return "Any Link"
 	}
 	return "No Link"
 }
 
-func (lc *LinkTrigger) Description() (description string) {
-	if lc.Presence {
+func (alc *LinkTrigger) Description() (description string) {
+	if alc.Presence {
 		return "Triggers when a message contains any valid link"
 	}
-	return "Triggers when a message DOES NOT contain any valid link"
+	return "Triggers when a message does not contain any valid link"
 }
 
-func (lc *LinkTrigger) UserSettings() []*SettingDef {
+func (alc *LinkTrigger) UserSettings() []*SettingDef {
 	return []*SettingDef{}
 }
 
-func (lc *LinkTrigger) CheckMessage(triggerCtx *TriggerContext, cs *dstate.ChannelState, m *discordgo.Message) (bool, error) {
+func (alc *LinkTrigger) CheckMessage(triggerCtx *TriggerContext, cs *dstate.ChannelState, m *discordgo.Message) (bool, error) {
 	for _, content := range m.GetMessageContents() {
 		if common.LinkRegex.MatchString(common.ForwardSlashReplacer.Replace(content)) {
-			return lc.Presence, nil
+			return alc.Presence, nil
 		}
 	}
-	return !lc.Presence, nil
+	return alc.Presence, nil
 
 }
 
-func (lc *LinkTrigger) MergeDuplicates(data []interface{}) interface{} {
+func (alc *LinkTrigger) MergeDuplicates(data []interface{}) interface{} {
 	return data[0] // no point in having duplicates of this
 }
 

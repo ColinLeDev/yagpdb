@@ -16,7 +16,7 @@ var RulePartMap = map[int]RulePart{
 	// Triggers <2xx
 	1:  &AllCapsTrigger{},
 	2:  &MentionsTrigger{},
-	3:  &LinkTrigger{Presence:true},
+	3:  &LinkTrigger{Presence: true},
 	4:  &ViolationsTrigger{},
 	5:  &WordListTrigger{Blacklist: true},
 	6:  &WordListTrigger{Blacklist: false},
@@ -51,7 +51,7 @@ var RulePartMap = map[int]RulePart{
 	36: &SlowmodeTrigger{Links: true, ChannelBased: false},
 	37: &SlowmodeTrigger{Links: true, ChannelBased: true},
 	38: &AutomodExecution{},
-	39: &LinkTrigger{Presence:false},
+	39: &LinkTrigger{Presence: false},
 
 	// Conditions 2xx
 	200: &MemberRolesCondition{Blacklist: true},
