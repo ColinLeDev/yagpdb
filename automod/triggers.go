@@ -111,41 +111,49 @@ func (mc *MentionsTrigger) MergeDuplicates(data []interface{}) interface{} {
 
 /////////////////////////////////////////////////////////////
 
-var _ MessageTrigger = (*AnyLinkTrigger)(nil)
+var _ MessageTrigger = (*LinkTrigger)(nil)
 
-type AnyLinkTrigger struct{}
+type LinkTrigger struct{
+	Presence bool
+}
 
-func (alc *AnyLinkTrigger) Kind() RulePartType {
+func (alc *LinkTrigger) Kind() RulePartType {
 	return RulePartTrigger
 }
 
-func (alc *AnyLinkTrigger) DataType() interface{} {
+func (alc *LinkTrigger) DataType() interface{} {
 	return nil
 }
 
-func (alc *AnyLinkTrigger) Name() (name string) {
-	return "Any Link"
+func (alc *LinkTrigger) Name() (name string) {
+	if alc.Presence {
+		return "Any Link"
+	}
+	return "No Link"
 }
 
-func (alc *AnyLinkTrigger) Description() (description string) {
-	return "Triggers when a message contains any valid link"
+func (alc *LinkTrigger) Description() (description string) {
+	if alc.Presence {
+		return "Triggers when a message contains any valid link"
+	}
+	return "Triggers when a message does not contain any valid link"
 }
 
-func (alc *AnyLinkTrigger) UserSettings() []*SettingDef {
+func (alc *LinkTrigger) UserSettings() []*SettingDef {
 	return []*SettingDef{}
 }
 
-func (alc *AnyLinkTrigger) CheckMessage(triggerCtx *TriggerContext, cs *dstate.ChannelState, m *discordgo.Message) (bool, error) {
+func (alc *LinkTrigger) CheckMessage(triggerCtx *TriggerContext, cs *dstate.ChannelState, m *discordgo.Message) (bool, error) {
 	for _, content := range m.GetMessageContents() {
 		if common.LinkRegex.MatchString(common.ForwardSlashReplacer.Replace(content)) {
-			return true, nil
+			return alc.Presence, nil
 		}
 	}
-	return false, nil
+	return alc.Presence, nil
 
 }
 
-func (alc *AnyLinkTrigger) MergeDuplicates(data []interface{}) interface{} {
+func (alc *LinkTrigger) MergeDuplicates(data []interface{}) interface{} {
 	return data[0] // no point in having duplicates of this
 }
 
