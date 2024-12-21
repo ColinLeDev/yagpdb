@@ -561,7 +561,7 @@ func handleUpdateCommand(w http.ResponseWriter, r *http.Request) (web.TemplateDa
 			specSchedule := schedule.(*cron.SpecSchedule)
 			var firstScheduledMinute, lastCheckedMinute *int
 			const minutesInAnHour = 60
-			const minIntervalDelayMinutes = 11
+			const minIntervalDelayMinutes = 10
 			for minuteOfHour := range minutesInAnHour {
 				minuteOfHourBitVal := uint64(1) << minuteOfHour
 				minutePresentInSchedule := specSchedule.Minute&minuteOfHourBitVal == minuteOfHourBitVal
