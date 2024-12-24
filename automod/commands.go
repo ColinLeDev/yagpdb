@@ -365,6 +365,62 @@ func (p *Plugin) AddCommands() {
 		},
 	}
 
+	cmdAddV := &commands.YAGCommand{
+		CustomEnabled: true,
+		CmdCategory:   commands.CategoryModeration,
+		Name:          "AddViolation",
+		Description:   "Adds a violation to the specified user for the specified rule.",
+		Aliases:       []string{"AddV", "AV"},
+		RequiredArgs: 2,
+		Arguments: []*dcmd.ArgDef{
+			{Name: "User", Type: dcmd.UserID},
+			{Name: "Violation-Rule-Name", Type: dcmd.String},
+		},
+		ArgSwitches: []*dcmd.ArgDef{},
+		RequireDiscordPerms: []int64{discordgo.PermissionManageGuild, discordgo.PermissionAdministrator, discordgo.PermissionBanMembers},
+		GuildScopeCooldown:  5,
+		RunFunc: func(parsed *dcmd.Data) (interface{}, error) {
+			UserID := parsed.Args[0].Int64()
+			VName := parsed.Args[1].Str()
+
+			//Create Violation
+			violation := &models.AutomodViolation{
+				GuildID: parsed.GuildData.GS.ID,
+				UserID:  UserID,
+				Name:    VName,
+			}
+			
+
+
+			return fmt.Sprintf("Added Violation %s to User %d", VName, UserID), nil
+		},
+	}
+
+
+		// 	settingsCast := settings.(*AddViolationEffectData)
+		// 	violation := &models.AutomodViolation{
+		// 		GuildID: ctxData.GS.ID,
+		// 		UserID:  ctxData.MS.User.ID,
+		// 		RuleID:  null.Int64From(ctxData.CurrentRule.Model.ID),
+		// 		Name:    settingsCast.Name,
+		// 	}
+
+		// 	err := violation.InsertG(context.Background(), boil.Infer())
+		// 	if err != nil {
+		// 		return err
+		// 	}
+
+		// 	newData := ctxData.Clone()
+		// 	newData.PreviousReasons = append(newData.PreviousReasons, ctxData.ConstructReason(false))
+		// 	newData.RecursionCounter++
+		// 	go ctxData.Plugin.checkViolationTriggers(newData, settingsCast.Name)
+
+		// 	logger.Debug("Added violation to ", settingsCast.Name)
+
+		// 	return err
+		// }
+
+
 	container, _ := commands.CommandSystem.Root.Sub("automod", "amod")
 	container.NotFound = commands.CommonContainerNotFoundHandler(container, "")
 	container.Description = "Commands for managing automod"
@@ -374,6 +430,7 @@ func (p *Plugin) AddCommands() {
 	container.AddCommand(cmdLogs, cmdLogs.GetTrigger())
 	container.AddCommand(cmdListV, cmdListV.GetTrigger())
 	container.AddCommand(cmdListVLC, cmdListVLC.GetTrigger())
+	container.AddCommand(cmdAddV, cmdAddV.GetTrigger())
 	container.AddCommand(cmdDelV, cmdDelV.GetTrigger())
 	container.AddCommand(cmdClearV, cmdClearV.GetTrigger())
 	commands.RegisterSlashCommandsContainer(container, false, func(gs *dstate.GuildSet) ([]int64, error) {
