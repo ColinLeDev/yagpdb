@@ -178,6 +178,15 @@ func (g *Game) Created() error {
 	return nil
 }
 
+func (g *Game) ChannelChange(cID int64) {
+	g.Lock()
+	defer g.Unlock()
+
+	g.MasterChannel = cID
+
+
+}
+
 func (g *Game) loadPackResponses() {
 	for _, v := range g.Packs {
 		pack := Packs[v]

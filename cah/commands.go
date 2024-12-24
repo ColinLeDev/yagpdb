@@ -3,6 +3,7 @@ package cah
 import (
 	"strings"
 
+	"github.com/friendsofgo/errors"
 	"github.com/botlabs-gg/yagpdb/v2/bot"
 	"github.com/botlabs-gg/yagpdb/v2/commands"
 	"github.com/botlabs-gg/yagpdb/v2/lib/cardsagainstdiscord"
@@ -105,6 +106,32 @@ func (p *Plugin) AddCommands() {
 		},
 	}
 
+	cmdMove := &commands.YAGCommand{
+		Name:         "Move",
+		CmdCategory:  commands.CategoryFun,
+		RequiredArgs: 1,
+		Arguments: []*dcmd.ArgDef{
+			{Name: "channel", Type: dcmd.ChannelOrThread},
+		},
+		Description: "Move the ongoing Cards Against Humanity game to another channel.",
+		RunFunc: func(data *dcmd.Data) (interface{}, error) {
+			channelID := data.Args[0].Int64()
+			
+			if checkNewChannel := p.Manager.FindGameFromChannelOrUser(channelID); checkNewChannel != nil {
+				return "There is already a game in the new channel", nil
+			}
+
+			err := p.Manager.MoveGameTo(data.ChannelID, channelID)
+			if !err {
+				return "It seems that there is no game in the current channel", errors.New("Failed to move game")
+			}
+			
+			logrus.Info("[cah] Moved a game from ", data.GuildData.CS.ID, " to ", channelID," :", data.GuildData.GS.ID)
+			return "Cah moved", nil
+		},
+	}
+
+
 	container, _ := commands.CommandSystem.Root.Sub("cah")
 	container.NotFound = commands.CommonContainerNotFoundHandler(container, "")
 	container.Description = "Play cards against humanity!"
@@ -113,6 +140,7 @@ func (p *Plugin) AddCommands() {
 	container.AddCommand(cmdEnd, cmdEnd.GetTrigger())
 	container.AddCommand(cmdKick, cmdKick.GetTrigger())
 	container.AddCommand(cmdPacks, cmdPacks.GetTrigger())
+	container.AddCommand(cmdMove, cmdMove.GetTrigger())
 	commands.RegisterSlashCommandsContainer(container, true, func(gs *dstate.GuildSet) ([]int64, error) {
 		return nil, nil
 	})

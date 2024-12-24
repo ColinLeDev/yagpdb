@@ -107,6 +107,22 @@ func (gm *GameManager) FindGameFromChannelOrUser(id int64) *Game {
 	return nil
 }
 
+func (gm *GameManager) MoveGameTo(gameid, channelid int64) bool {
+	gm.RLock()
+	defer gm.RUnlock()
+	
+	g, ok := gm.ActiveGames[gameid]; 
+	if !ok || g == nil {
+		return false
+	}
+
+	g.ChannelChange(channelid)
+
+	g.
+
+	return true
+}
+
 func (gm *GameManager) PlayerTryJoinGame(gameID, playerID int64, username string) error {
 	gm.Lock()
 	defer gm.Unlock()
