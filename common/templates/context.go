@@ -111,11 +111,8 @@ var (
 		"roleAbove":   roleIsAbove,
 		"seq":         sequence,
 
-		"shuffle":      shuffle,
-		"verb":         common.RandomVerb,
-		"hash":         tmplSha256,
-		"decodeBase64": tmplDecodeBase64,
-		"encodeBase64": tmplEncodeBase64,
+		"shuffle": shuffle,
+		"verb":    common.RandomVerb,
 
 		// time functions
 		"currentTime":     tmplCurrentTime,
@@ -784,6 +781,9 @@ func baseContextFuncs(c *Context) {
 
 	c.addContextFunc("sleep", c.tmplSleep)
 	c.addContextFunc("sort", c.tmplSort)
+	c.addContextFunc("hash", c.tmplSha256)
+	c.addContextFunc("decodeBase64", c.tmplDecodeBase64)
+	c.addContextFunc("encodeBase64", c.tmplEncodeBase64)
 }
 
 type limitedWriter struct {
