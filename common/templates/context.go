@@ -624,9 +624,9 @@ func (c *Context) IncreaseCheckGenericAPICall() bool {
 		factor = 10
 	}
 	if c.ExecutedFrom == ExecutedFromEvalCC {
-		return c.IncreaseCheckCallCounter("api_call", 20*factor)
+		return c.IncreaseCheckCallCounter("api_call", 200*factor)
 	}
-	return c.IncreaseCheckCallCounter("api_call", 100*factor)
+	return c.IncreaseCheckCallCounter("api_call", 1000*factor)
 }
 
 func (c *Context) LogEntry() *logrus.Entry {
