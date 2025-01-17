@@ -50,9 +50,10 @@ func (t TicketUserError) Error() string {
 }
 
 const (
-	ErrNoTicketCateogry TicketUserError = "No category for ticket channels set"
-	ErrTitleTooLong     TicketUserError = "Title is too long (max 90 characters.) Please shorten it down, you can add more details in the ticket after it has been created"
-	ErrMaxOpenTickets   TicketUserError = "You're currently in over 10 open tickets on this server, please close some of the ones you're in."
+	ErrNoTicketCategory    TicketUserError = "No category for ticket channels set"
+	ErrTitleTooLong        TicketUserError = "Title is too long (max 90 characters.) Please shorten it down, you can add more details in the ticket after it has been created"
+	ErrMaxOpenTickets      TicketUserError = "You're currently in over 10 open tickets on this server, please close some of the ones you're in."
+	ErrMaxCategoryChannels TicketUserError = "Max channels in category reached (50)"
 )
 
 const (
@@ -62,7 +63,18 @@ const (
 
 func CreateTicket(ctx context.Context, gs *dstate.GuildSet, ms *dstate.MemberState, conf *models.TicketConfig, topic string, checkMaxTickets, executedByCommandTemplate bool) (*dstate.GuildSet, *models.Ticket, error) {
 	if gs.GetChannel(conf.TicketsChannelCategory) == nil {
-		return gs, nil, ErrNoTicketCateogry
+		return gs, nil, ErrNoTicketCategory
+	}
+
+	categoryChannels := 0
+	for _, v := range gs.Channels {
+		if v.ParentID == conf.TicketsChannelCategory {
+			categoryChannels++
+		}
+
+		if categoryChannels == 50 {
+			return gs, nil, ErrMaxCategoryChannels
+		}
 	}
 
 	if hasPerms, _ := bot.BotHasPermissionGS(gs, conf.TicketsChannelCategory, InTicketPerms); !hasPerms {
@@ -290,12 +302,10 @@ func handleButton(evt *eventsystem.EventData, ic *discordgo.InteractionCreate, m
 			return response, err
 		}
 		var currentTicket *Ticket
-		if activeTicket != nil {
-			participants, _ := models.TicketParticipants(qm.Where("ticket_guild_id = ? AND ticket_local_id = ?", activeTicket.GuildID, activeTicket.LocalID)).AllG(evt.Context())
-			currentTicket = &Ticket{
-				Ticket:       activeTicket,
-				Participants: participants,
-			}
+		participants, _ := models.TicketParticipants(qm.Where("ticket_guild_id = ? AND ticket_local_id = ?", activeTicket.GuildID, activeTicket.LocalID)).AllG(evt.Context())
+		currentTicket = &Ticket{
+			Ticket:       activeTicket,
+			Participants: participants,
 		}
 
 		common.BotSession.CreateInteractionResponse(ic.ID, ic.Token, &discordgo.InteractionResponse{
@@ -352,12 +362,10 @@ func handleModal(evt *eventsystem.EventData, ic *discordgo.InteractionCreate, me
 			return response, err
 		}
 		var currentTicket *Ticket
-		if activeTicket != nil {
-			participants, _ := models.TicketParticipants(qm.Where("ticket_guild_id = ? AND ticket_local_id = ?", activeTicket.GuildID, activeTicket.LocalID)).AllG(evt.Context())
-			currentTicket = &Ticket{
-				Ticket:       activeTicket,
-				Participants: participants,
-			}
+		participants, _ := models.TicketParticipants(qm.Where("ticket_guild_id = ? AND ticket_local_id = ?", activeTicket.GuildID, activeTicket.LocalID)).AllG(evt.Context())
+		currentTicket = &Ticket{
+			Ticket:       activeTicket,
+			Participants: participants,
 		}
 
 		common.BotSession.CreateInteractionResponse(ic.ID, ic.Token, &discordgo.InteractionResponse{
@@ -381,17 +389,6 @@ func (p *Plugin) handleInteractionCreate(evt *eventsystem.EventData) (retry bool
 		return
 	}
 
-	evt.GS = bot.State.GetGuild(ic.GuildID)
-
-	conf, err := models.FindTicketConfigG(evt.Context(), ic.GuildID)
-	if err != nil {
-		if err != sql.ErrNoRows {
-			return false, err
-		}
-
-		conf = &models.TicketConfig{}
-	}
-
 	var customID string
 	switch ic.Type {
 	case discordgo.InteractionMessageComponent:
@@ -405,6 +402,16 @@ func (p *Plugin) handleInteractionCreate(evt *eventsystem.EventData) (retry bool
 	// continue only if this component is for tickets
 	if ticketCID := strings.HasPrefix(customID, "tickets-"); !ticketCID {
 		return
+	}
+
+	evt.GS = bot.State.GetGuild(ic.GuildID)
+	conf, err := models.FindTicketConfigG(evt.Context(), ic.GuildID)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			return false, err
+		}
+
+		conf = &models.TicketConfig{}
 	}
 
 	if !conf.Enabled && strings.Contains(customID, "open") {
