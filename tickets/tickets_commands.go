@@ -270,11 +270,12 @@ func (p *Plugin) AddCommands() {
 	const emojiRegex = `\A\s*((<a?:[\w~]{2,32}:\d{17,19}>)|[\x{1f1e6}-\x{1f1ff}]{2}|\p{So}\x{fe0f}?[\x{1f3fb}-\x{1f3ff}]?(\x{200D}\p{So}\x{fe0f}?[\x{1f3fb}-\x{1f3ff}]?)*|[#\d*]\x{FE0F}?\x{20E3})`
 
 	cmdMenuCreate := &commands.YAGCommand{
-		CmdCategory:     categoryTickets,
-		Name:            "MenuCreate",
-		Aliases:         []string{"mc"},
-		Description:     "Creates a menu with buttons to open tickets.",
-		LongDescription: "Creates and sends a message with buttons allowing users to open tickets, optionally with predefined reasons.\n\nInstead of creating a new message, attach it to another message the bot has sent with `-message bot-message-id-here`. This __must__ be a message the bot has sent.\nCreate buttons with up to 9 predefined reasons with `-button-1 \"Reason for button 1\"`, `-button-2 \"Reason for button 2\"`, etc.\nIf using predefined reason buttons, you may optionally disable the custom reason button with `-disable-custom`.",
+		CmdCategory:         categoryTickets,
+		Name:                "MenuCreate",
+		Aliases:             []string{"mc"},
+		Description:         "Creates a menu with buttons to open tickets.",
+		LongDescription:     "Creates and sends a message with buttons allowing users to open tickets, optionally with predefined reasons.\n\nInstead of creating a new message, attach it to another message the bot has sent with `-message bot-message-id-here`. This __must__ be a message the bot has sent.\nCreate buttons with up to 9 predefined reasons with `-button-1 \"Reason for button 1\"`, `-button-2 \"Reason for button 2\"`, etc.\nIf using predefined reason buttons, you may optionally disable the custom reason button with `-disable-custom`.",
+		RequireDiscordPerms: []int64{discordgo.PermissionManageGuild},
 		ArgSwitches: []*dcmd.ArgDef{
 			{Name: "message", Help: "ID to attach menu to", Type: dcmd.BigInt},
 			{Name: "disable-custom", Help: "Disable Cutsom Reason button", Default: false},
@@ -515,12 +516,12 @@ func createLogs(gs *dstate.GuildSet, conf *models.TicketConfig, ticket *models.T
 		for _, msg := range m {
 			// download attachments
 		OUTER:
-			for _, att := range msg.Attachments {
+			for _, att := range msg.GetMessageAttachments() {
 				msg.Content += fmt.Sprintf("(attachment: %s)", att.Filename)
 
 				totalAttachmentSize += att.Size
-				if totalAttachmentSize > 500000000 {
-					// above 500MB, ignore...
+				if totalAttachmentSize > 100000000 {
+					// above 100MB, ignore...
 					break
 				}
 
@@ -531,7 +532,7 @@ func createLogs(gs *dstate.GuildSet, conf *models.TicketConfig, ticket *models.T
 						combinedSize += a.Size
 					}
 
-					if att.Size+combinedSize > 40000000 {
+					if att.Size+combinedSize > 8000000 {
 						continue
 					}
 
