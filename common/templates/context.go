@@ -61,6 +61,8 @@ var (
 		"printf":       withOutputLimitF(fmt.Sprintf, MaxStringLength),
 		"sanitizeText": confusables.SanitizeText,
 
+		"splitSlice": splitSlice,
+
 		// regexp
 		"reQuoteMeta": regexp.QuoteMeta,
 
@@ -1484,4 +1486,17 @@ func withOutputLimitF(f func(string, ...interface{}) string, limit int) func(str
 		}
 		return out, nil
 	}
+}
+
+func splitSlice(s, sep string) (Slice, error) {
+	split := strings.Split(s, sep)
+	slice, err := CreateSlice()
+	if err != nil {
+		return nil, err
+	}
+	toRange := reflect.ValueOf(&slice).Elem()
+	for _, v := range split {
+		toRange.Set(reflect.Append(toRange, reflect.ValueOf(v)))
+	}
+	return slice, nil
 }
