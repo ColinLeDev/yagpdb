@@ -102,22 +102,22 @@ func (c *Context) tmplSendDMTo(target interface{}, s ...interface{}) string {
 	default:
 		msgSend.Content = fmt.Sprint(s...)
 	}
-	serverInfo := []discordgo.MessageComponent{
-		discordgo.ActionsRow{
-			Components: []discordgo.MessageComponent{
-				discordgo.Button{
-					Label:    "Show Server Info",
-					Style:    discordgo.PrimaryButton,
-					Emoji:    &discordgo.ComponentEmoji{Name: "📬"},
-					CustomID: fmt.Sprintf("DM_%d", c.GS.ID),
-				},
-			},
-		},
-	}
-	if len(msgSend.Components) >= 5 {
-		msgSend.Components = msgSend.Components[:4]
-	}
-	msgSend.Components = append(serverInfo, msgSend.Components...)
+	// serverInfo := []discordgo.MessageComponent{
+	// 	discordgo.ActionsRow{
+	// 		Components: []discordgo.MessageComponent{
+	// 			discordgo.Button{
+	// 				Label:    "Show Server Info",
+	// 				Style:    discordgo.PrimaryButton,
+	// 				Emoji:    &discordgo.ComponentEmoji{Name: "📬"},
+	// 				CustomID: fmt.Sprintf("DM_%d", c.GS.ID),
+	// 			},
+	// 		},
+	// 	},
+	// }
+	// if len(msgSend.Components) >= 5 {
+	// 	msgSend.Components = msgSend.Components[:4]
+	// }
+	// msgSend.Components = append(serverInfo, msgSend.Components...)
 
 	
 	targetID := TargetUserID(target)
