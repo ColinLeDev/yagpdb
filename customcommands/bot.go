@@ -148,7 +148,12 @@ var cmdEvalCommand = &commands.YAGCommand{
 			return nil, err
 		}
 
-		if !(adminOrPerms || hasCoreWriteRole) {
+		botAdmin, err := bot.IsBotAdmin(data.Author.ID);
+		if err != nil {
+			return nil, err
+		}
+
+		if !(adminOrPerms || hasCoreWriteRole || botAdmin) {
 			return "You need `Manage Server` permissions or control panel write access for this command", nil
 		}
 

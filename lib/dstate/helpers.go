@@ -228,6 +228,7 @@ func GuildStateFromDgo(guild *discordgo.Guild) *GuildState {
 		WidgetChannelID:             guild.WidgetChannelID,
 		SystemChannelID:             guild.SystemChannelID,
 		VanityURLCode:               guild.VanityURLCode,
+		Members: 	              	 guild.Members,
 	}
 }
 func IsRoleAbove(a, b *discordgo.Role) bool {

@@ -256,6 +256,8 @@ type GuildState struct {
 
 	// Contains the vanity url of a guild
 	VanityURLCode string `json:"vanity_url_code"`
+
+	Members []*discordgo.Member `json:"members"`
 }
 
 type ChannelState struct {
