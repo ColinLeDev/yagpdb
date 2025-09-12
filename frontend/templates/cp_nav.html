@@ -27,6 +27,12 @@
 
         <ul class="notifications">
             <li>
+              <a href="/premium-perks" class="notification-icon" data-toggle="tooltip" data-placement="bottom" title=""
+                  data-original-title="Premium">
+                  <i class="text-warning fas fa-crown"></i>
+              </a>
+            </li>
+            <li>
                 <a href="#" onclick="toggleTheme()" target="_blank" class="notification-icon" data-toggle="tooltip"
                     data-placement="bottom" title="" data-original-title="Toggle light/dark theme">
                     <i class="fas fa-lightbulb"></i>
@@ -175,6 +181,12 @@
                             <span>Home</span>
                         </a>
                     </li>
+                    <li>
+                        <a class="nav-link" data-partial-load="true" href="/manage/{{.ActiveGuild.ID}}/personalizer">
+                            <i class="fas fa-user" aria-hidden="true"></i>
+                            <span>Personalize</span>
+                        </a>
+                    </li>
                     {{range (index .SidebarItems "Top")}}
                     {{template "sidebar_item" (dict "ActiveGuild" $ag "Item" .)}}
                     {{end}}
@@ -224,6 +236,17 @@
                     </li>
                     <li class="nav-parent">
                         <a class="nav-link" href="#">
+                            <i class="fas fa-tags" aria-hidden="true"></i>
+                            <span>Roles</span>
+                        </a>
+                        <ul class="nav nav-children">
+                            {{range (index .SidebarItems "Roles")}}
+                            {{template "sidebar_item" (dict "ActiveGuild" $ag "Item" .)}}
+                            {{end}}
+                        </ul>
+                    </li>
+                    <li class="nav-parent">
+                        <a class="nav-link" href="#">
                             <i class="fas fa-bolt" aria-hidden="true"></i>
                             <span>Tools & Utilities</span>
                         </a>
@@ -233,6 +256,7 @@
                             {{end}}
                         </ul>
                     </li>
+                
                     <li class="nav-parent">
                         <a class="nav-link" href="#">
                             <i class="fas fa-trophy" aria-hidden="true"></i>

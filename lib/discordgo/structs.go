@@ -452,10 +452,10 @@ type StickerFormat int
 
 // Defines all known Sticker types.
 const (
-	StickerFormatTypePNG	StickerFormat = 1
-	StickerFormatTypeAPNG	StickerFormat = 2
-	StickerFormatTypeLottie	StickerFormat = 3
-	StickerFormatTypeGIF	StickerFormat = 4
+	StickerFormatTypePNG    StickerFormat = 1
+	StickerFormatTypeAPNG   StickerFormat = 2
+	StickerFormatTypeLottie StickerFormat = 3
+	StickerFormatTypeGIF    StickerFormat = 4
 )
 
 // StickerType is the type of Sticker.
@@ -463,8 +463,8 @@ type StickerType int
 
 // Defines Sticker types.
 const (
-	StickerTypeStandard	StickerType = 1
-	StickerTypeGuild	StickerType = 2
+	StickerTypeStandard StickerType = 1
+	StickerTypeGuild    StickerType = 2
 )
 
 // Sticker represents a Sticker object that can be sent in a Message.
@@ -479,7 +479,7 @@ type Sticker struct {
 	Available   bool          `json:"available"`
 	GuildID     int64         `json:"guild_id,string"`
 	User        *User         `json:"user"`
-	SortValue   int	          `json:"sort_value"`
+	SortValue   int           `json:"sort_value"`
 }
 
 // StickerItem represents the smallest amount of data required to render a sticker. A partial sticker object.
@@ -722,11 +722,28 @@ type Role struct {
 	// This is a combination of bit masks; the presence of a certain permission can
 	// be checked by performing a bitwise AND between this int and the permission.
 	Permissions int64 `json:"permissions,string"`
+
+	// The hash of the role icon. Use .IconURL to retrieve the icon's URL.
+	Icon string `json:"icon"`
 }
 
 // Mention returns a string which mentions the role
 func (r *Role) Mention() string {
 	return fmt.Sprintf("<@&%d>", r.ID)
+}
+
+func (r *Role) IconURL(size string) string {
+	if r.Icon == "" {
+		return ""
+	}
+
+	URL := EndpointRoleIcon(r.ID, r.Icon)
+
+	if size != "" {
+		return URL + "?size=" + size
+	}
+
+	return URL
 }
 
 // Roles are a collection of Role
@@ -954,6 +971,9 @@ type Member struct {
 	// The guild avatar hash of the member, if they have one.
 	Avatar string `json:"avatar"`
 
+	// The guild banner hash of the member, if they have one.
+	Banner string `json:"banner"`
+
 	// Whether the member is deafened at a guild level.
 	Deaf bool `json:"deaf"`
 
@@ -1000,6 +1020,22 @@ func (m *Member) AvatarURL(size string) string {
 		URL = EndpointGuildMemberAvatarAnimated(m.GuildID, u.ID, m.Avatar)
 	} else {
 		URL = EndpointGuildMemberAvatar(m.GuildID, u.ID, m.Avatar)
+	}
+
+	if size != "" {
+		return URL + "?size=" + size
+	}
+	return URL
+}
+
+func (m *Member) BannerURL(size string) string {
+	var URL string
+	if m.Banner == "" {
+		return ""
+	} else if strings.HasPrefix(m.Banner, "a_") {
+		URL = EndpointUserBannerAnimated(m.GuildID, m.Banner)
+	} else {
+		URL = EndpointUserBanner(m.GuildID, m.Banner)
 	}
 
 	if size != "" {
@@ -1425,15 +1461,15 @@ type Webhook struct {
 
 // WebhookParams is a struct for webhook params, used in the WebhookExecute command.
 type WebhookParams struct {
-	Content         string             `json:"content,omitempty"`
-	Username        string             `json:"username,omitempty"`
-	AvatarURL       string             `json:"avatar_url,omitempty"`
-	TTS             bool               `json:"tts,omitempty"`
-	File            *File              `json:"-,omitempty"`
-	Components      []MessageComponent `json:"components"`
-	Embeds          []*MessageEmbed    `json:"embeds,omitempty"`
-	Flags           int64              `json:"flags,omitempty"`
-	AllowedMentions *AllowedMentions   `json:"allowed_mentions,omitempty"`
+	Content         string              `json:"content,omitempty"`
+	Username        string              `json:"username,omitempty"`
+	AvatarURL       string              `json:"avatar_url,omitempty"`
+	TTS             bool                `json:"tts,omitempty"`
+	File            *File               `json:"-,omitempty"`
+	Components      []TopLevelComponent `json:"components"`
+	Embeds          []*MessageEmbed     `json:"embeds,omitempty"`
+	Flags           int64               `json:"flags,omitempty"`
+	AllowedMentions *AllowedMentions    `json:"allowed_mentions,omitempty"`
 }
 
 // MessageReaction stores the data for a message reaction.
@@ -1461,9 +1497,10 @@ type GatewayBotResponse struct {
 }
 
 type SessionStartLimit struct {
-	Total      int   `json:"total"`
-	Remaining  int   `json:"remaining"`
-	ResetAfter int64 `json:"reset_after"`
+	Total          int   `json:"total"`
+	Remaining      int   `json:"remaining"`
+	ResetAfter     int64 `json:"reset_after"`
+	MaxConcurrency int   `json:"max_concurrency"`
 }
 
 // Block contains Discord JSON Error Response codes
@@ -1938,4 +1975,10 @@ type SubscriptionFilterOptions struct {
 	AfterID  int64
 	Limit    int
 	UserId   int64
+}
+
+type CurrentGuildMemberUpdate struct {
+	Nick   string `json:"nick,omitempty"`
+	Avatar string `json:"avatar,omitempty"`
+	Banner string `json:"banner,omitempty"`
 }

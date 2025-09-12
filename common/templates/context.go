@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 	"unicode/utf8"
 
 	"emperror.dev/errors"
@@ -62,6 +63,7 @@ var (
 		"reQuoteMeta": regexp.QuoteMeta,
 
 		// math
+		"abs":        tmplAbs,
 		"add":        add,
 		"cbrt":       tmplCbrt,
 		"div":        tmplDiv,
@@ -94,6 +96,7 @@ var (
 		"dict":               Dictionary,
 		"sdict":              StringKeyDictionary,
 		"structToSdict":      StructToSdict,
+		"componentBuilder":   CreateComponentBuilder,
 		"cembed":             CreateEmbed,
 		"cbutton":            CreateButton,
 		"cmenu":              CreateSelectMenu,
@@ -207,7 +210,7 @@ type ContextFrame struct {
 
 	DelResponseDelay         int
 	EmbedsToSend             []*discordgo.MessageEmbed
-	ComponentsToSend         []discordgo.MessageComponent
+	ComponentsToSend         []discordgo.TopLevelComponent
 	AddResponseReactionNames []string
 
 	isNestedTemplate bool
@@ -220,6 +223,7 @@ type ContextFrame struct {
 type CustomCommandInteraction struct {
 	*discordgo.Interaction
 	RespondedTo bool
+	Deferred    bool
 }
 
 func NewContext(gs *dstate.GuildSet, cs *dstate.ChannelState, ms *dstate.MemberState) *Context {
@@ -324,8 +328,9 @@ func (c *Context) Parse(source string) (*template.Template, error) {
 const (
 	MaxOpsNormal      = 1000000
 	MaxOpsPremium     = 2500000
-	MaxOpsEvalNormal  = 5000
-	MaxOpsEvalPremium = 10000
+	MaxOpsEvalNormal  = 200000
+	MaxOpsEvalPremium = 500000
+	MaxSliceLength    = 10000
 )
 
 func (c *Context) Execute(source string) (string, error) {
@@ -462,6 +467,9 @@ func (c *Context) SendResponse(content string) (m *discordgo.Message, err error)
 	if c.CurrentFrame.Interaction != nil {
 		if c.CurrentFrame.Interaction.RespondedTo {
 			sendType = sendMessageInteractionFollowup
+			if c.CurrentFrame.Interaction.Deferred {
+				sendType = sendMessageInteractionDeferred
+			}
 		} else {
 			sendType = sendMessageInteractionResponse
 		}
@@ -506,18 +514,7 @@ func (c *Context) SendResponse(content string) (m *discordgo.Message, err error)
 	}
 	if sendType == sendMessageDM {
 		msgSend.Content = common.ReplaceServerInvites(msgSend.Content, 0, "[removed-server-invite]")
-		msgSend.Components = []discordgo.MessageComponent{
-			discordgo.ActionsRow{
-				Components: []discordgo.MessageComponent{
-					discordgo.Button{
-						Label:    "Show Server Info",
-						Style:    discordgo.PrimaryButton,
-						Emoji:    &discordgo.ComponentEmoji{Name: "📬"},
-						CustomID: fmt.Sprintf("DM_%d", c.GS.ID),
-					},
-				},
-			},
-		}
+		msgSend.Components = bot.GenerateServerInfoButton(c.GS.ID)
 	}
 
 	if c.CurrentFrame.EphemeralResponse {
@@ -548,6 +545,16 @@ func (c *Context) SendResponse(content string) (m *discordgo.Message, err error)
 			AllowedMentions: &msgSend.AllowedMentions,
 			Flags:           int64(msgSend.Flags),
 		})
+	case sendMessageInteractionDeferred:
+		m, err = common.BotSession.EditOriginalInteractionResponse(common.BotApplication.ID, c.CurrentFrame.Interaction.Token, &discordgo.WebhookParams{
+			Content:         msgSend.Content,
+			Embeds:          msgSend.Embeds,
+			AllowedMentions: &msgSend.AllowedMentions,
+			Flags:           int64(msgSend.Flags),
+		})
+		if err == nil {
+			c.CurrentFrame.Interaction.Deferred = false
+		}
 	default:
 		m, err = common.BotSession.ChannelMessageSendComplex(channelID, msgSend)
 	}
@@ -585,10 +592,11 @@ func (c *Context) SendResponse(content string) (m *discordgo.Message, err error)
 type sendMessageType uint
 
 const (
-	sendMessageGuildChannel        sendMessageType = 0
-	sendMessageDM                  sendMessageType = 1
-	sendMessageInteractionResponse sendMessageType = 2
-	sendMessageInteractionFollowup sendMessageType = 3
+	sendMessageGuildChannel sendMessageType = iota
+	sendMessageDM
+	sendMessageInteractionResponse
+	sendMessageInteractionFollowup
+	sendMessageInteractionDeferred
 )
 
 // IncreaseCheckCallCounter Returns true if key is above the limit
@@ -660,7 +668,8 @@ func baseContextFuncs(c *Context) {
 	c.addContextFunc("deleteMessage", c.tmplDelMessage)
 	c.addContextFunc("deleteResponse", c.tmplDelResponse)
 	c.addContextFunc("deleteTrigger", c.tmplDelTrigger)
-	
+	c.addContextFunc("editComponentMessage", c.tmplEditComponentsMessage(true))
+	c.addContextFunc("editComponentMessageNoEscape", c.tmplEditComponentsMessage(false))
 	c.addContextFunc("getMessages", c.tmplGetMessages)
 	c.addContextFunc("editMessage", c.tmplEditMessage(true))
 	c.addContextFunc("editMessageNoEscape", c.tmplEditMessage(false))
@@ -672,6 +681,11 @@ func baseContextFuncs(c *Context) {
 
 	// Message send functions
 	c.addContextFunc("sendDM", c.tmplSendDM)
+	c.addContextFunc("sendComponentMessageRetID", c.tmplSendComponentsMessage(true, true))
+	c.addContextFunc("sendComponentMessage", c.tmplSendComponentsMessage(true, false))
+	c.addContextFunc("sendComponentMessageNoEscape", c.tmplSendComponentsMessage(false, false))
+	c.addContextFunc("sendComponentMessageNoEscapeRetID", c.tmplSendComponentsMessage(false, true))
+	c.addContextFunc("sendComponentMessageRetID", c.tmplSendComponentsMessage(true, true))
 	c.addContextFunc("sendDMTo", c.tmplSendDMTo)
 	c.addContextFunc("sendMessage", c.tmplSendMessage(true, false))
 	c.addContextFunc("sendMessageNoEscape", c.tmplSendMessage(false, false))
@@ -792,15 +806,32 @@ func baseContextFuncs(c *Context) {
 type limitedWriter struct {
 	W io.Writer
 	N int64
+	i int64
 }
 
 func (l *limitedWriter) Write(p []byte) (n int, err error) {
+	noLeadingWhitespace := trimLeftSpace(p)
+	if l.N == l.i {
+		if len(noLeadingWhitespace) < 1 {
+			return 0, nil
+		} else {
+			p = noLeadingWhitespace
+		}
+	}
+
 	if l.N <= 0 {
-		return 0, io.ErrShortWrite
+		swErr := io.ErrShortWrite
+		if len(noLeadingWhitespace) < 1 {
+			swErr = nil
+		}
+		return 0, swErr
 	}
 	if int64(len(p)) > l.N {
-		p = p[0:l.N]
-		err = io.ErrShortWrite
+		var cut []byte
+		p, cut = p[0:l.N], p[l.N:]
+		if len(bytes.TrimSpace(cut)) > 0 {
+			err = io.ErrShortWrite
+		}
 	}
 	n, er := l.W.Write(p)
 	if er != nil {
@@ -810,11 +841,33 @@ func (l *limitedWriter) Write(p []byte) (n int, err error) {
 	return n, err
 }
 
+var asciiSpace = [256]uint8{'\t': 1, '\n': 1, '\v': 1, '\f': 1, '\r': 1, ' ': 1}
+
+func trimLeftSpace(s []byte) []byte {
+	// Fast path for ASCII: look for the first ASCII non-space byte
+	start := 0
+	for ; start < len(s); start++ {
+		c := s[start]
+		if c >= utf8.RuneSelf {
+			// If we run into a non-ASCII byte, fall back to the
+			// slower unicode-aware method on the remaining bytes
+			return bytes.TrimLeftFunc(s[start:], unicode.IsSpace)
+		}
+		if asciiSpace[c] == 0 {
+			break
+		}
+	}
+
+	return s[start:]
+}
+
 // LimitWriter works like io.LimitReader. It writes at most n bytes
 // to the underlying Writer. It returns io.ErrShortWrite if more than n
-// bytes are attempted to be written.
+// bytes are attempted to be written, unless those bytes are exclusively
+// whitespace, in which case it will not write them and return without error.
+// It will not write leading whitespace.
 func LimitWriter(w io.Writer, n int64) io.Writer {
-	return &limitedWriter{W: w, N: n}
+	return &limitedWriter{W: w, N: n, i: n}
 }
 
 func MaybeScheduledDeleteMessage(guildID, channelID, messageID int64, delaySeconds int, token string) {
@@ -1002,18 +1055,23 @@ func (d SDict) HasKey(k string) (ok bool) {
 type Slice []interface{}
 
 func (s Slice) Append(item interface{}) (interface{}, error) {
-	if len(s)+1 > 10000 {
+	if len(s)+1 > MaxSliceLength {
 		return nil, errors.New("resulting slice exceeds slice size limit")
 	}
 
-	switch v := item.(type) {
-	case nil:
-		result := reflect.Append(reflect.ValueOf(&s).Elem(), reflect.Zero(reflect.TypeOf((*interface{})(nil)).Elem()))
-		return result.Interface(), nil
-	default:
-		result := reflect.Append(reflect.ValueOf(&s).Elem(), reflect.ValueOf(v))
-		return result.Interface(), nil
+	var result reflect.Value
+	if item == nil {
+		result = reflect.Append(reflect.ValueOf(&s).Elem(), reflect.Zero(reflect.TypeOf((*interface{})(nil)).Elem()))
+	} else {
+		result = reflect.Append(reflect.ValueOf(&s).Elem(), reflect.ValueOf(item))
 	}
+
+	if isContainer(item) {
+		if err := detectCyclicValue(result.Interface()); err != nil {
+			return "", template.UncatchableError(err)
+		}
+	}
+	return result.Interface(), nil
 }
 
 func (s Slice) Set(index int, item interface{}) (string, error) {
@@ -1035,26 +1093,32 @@ func (s Slice) AppendSlice(slice interface{}) (interface{}, error) {
 	switch val.Kind() {
 	case reflect.Slice, reflect.Array:
 	// this is valid
-
 	default:
 		return nil, errors.New("value passed is not an array or slice")
 	}
 
-	if len(s)+val.Len() > 10000 {
+	if len(s)+val.Len() > MaxSliceLength {
 		return nil, errors.New("resulting slice exceeds slice size limit")
 	}
 
 	result := reflect.ValueOf(&s).Elem()
+	containsContainer := false
 	for i := 0; i < val.Len(); i++ {
-		switch v := val.Index(i).Interface().(type) {
-		case nil:
+		elem := val.Index(i).Interface()
+		if elem == nil {
 			result = reflect.Append(result, reflect.Zero(reflect.TypeOf((*interface{})(nil)).Elem()))
-
-		default:
-			result = reflect.Append(result, reflect.ValueOf(v))
+		} else {
+			result = reflect.Append(result, reflect.ValueOf(elem))
+			if !containsContainer && isContainer(elem) {
+				containsContainer = true
+			}
 		}
 	}
-
+	if containsContainer {
+		if err := detectCyclicValue(result.Interface()); err != nil {
+			return "", template.UncatchableError(err)
+		}
+	}
 	return result.Interface(), nil
 }
 
@@ -1085,6 +1149,223 @@ func (s Slice) StringSlice(flag ...bool) interface{} {
 	}
 
 	return StringSlice
+}
+
+type ComponentBuilder struct {
+	Components []string
+	Values     []interface{}
+}
+
+func (s *ComponentBuilder) Add(key string, value interface{}) (interface{}, error) {
+	if len(s.Components)+1 > MaxSliceLength {
+		return nil, errors.New("resulting slice exceeds slice size limit")
+	}
+
+	s.Components = append(s.Components, key)
+	s.Values = append(s.Values, value)
+
+	if isContainer(value) {
+		if err := detectCyclicValue(s.Values); err != nil {
+			return "", template.UncatchableError(err)
+		}
+	}
+	return "", nil
+}
+
+func (s *ComponentBuilder) AddSlice(key string, slice interface{}) (interface{}, error) {
+	val, _ := indirect(reflect.ValueOf(slice))
+	switch val.Kind() {
+	case reflect.Slice, reflect.Array:
+	// this is valid
+
+	default:
+		return nil, errors.New("value passed is not an array or slice")
+	}
+
+	if len(s.Components)+val.Len() > MaxSliceLength {
+		return nil, errors.New("resulting slice exceeds slice size limit")
+	}
+
+	result := reflect.ValueOf(&s.Values).Elem()
+	containsContainer := false
+	for i := 0; i < val.Len(); i++ {
+		s.Components = append(s.Components, key)
+		elem := val.Index(i).Interface()
+		if elem == nil {
+			result = reflect.Append(result, reflect.Zero(reflect.TypeOf((*interface{})(nil)).Elem()))
+		} else {
+			result = reflect.Append(result, reflect.ValueOf(elem))
+			if !containsContainer && isContainer(elem) {
+				containsContainer = true
+			}
+		}
+	}
+	s.Values = result.Interface().([]interface{})
+
+	if containsContainer {
+		if err := detectCyclicValue(s.Values); err != nil {
+			return "", template.UncatchableError(err)
+		}
+	}
+
+	return "", nil
+}
+
+func (s *ComponentBuilder) Merge(toMerge *ComponentBuilder) (interface{}, error) {
+	if len(s.Components)+len(toMerge.Components) > MaxSliceLength {
+		return nil, errors.New("resulting slice exceeds slice size limit")
+	}
+
+	containsContainer := false
+	for i, k := range toMerge.Components {
+		s.Add(k, toMerge.Values[i])
+		if !containsContainer && isContainer(toMerge.Values[i]) {
+			containsContainer = true
+		}
+	}
+	if containsContainer {
+		if err := detectCyclicValue(s.Values); err != nil {
+			return "", template.UncatchableError(err)
+		}
+	}
+
+	return "", nil
+}
+
+func (s *ComponentBuilder) Get(key string) (result []interface{}) {
+	for i, k := range s.Components {
+		if k == key {
+			result = append(result, s.Values[i])
+		}
+	}
+	return
+}
+
+func (s *ComponentBuilder) ToComplexMessage() (*discordgo.MessageSend, error) {
+	msg := &discordgo.MessageSend{
+		AllowedMentions: discordgo.AllowedMentions{
+			Parse: []discordgo.AllowedMentionType{discordgo.AllowedMentionTypeUsers},
+		},
+		Flags: discordgo.MessageFlagsIsComponentsV2,
+	}
+
+	componentArgs := &ComponentBuilder{}
+	for i, key := range s.Components {
+		val := s.Values[i]
+
+		switch strings.ToLower(key) {
+		case "allowed_mentions":
+			if val == nil {
+				msg.AllowedMentions = discordgo.AllowedMentions{}
+				continue
+			}
+			parsed, err := parseAllowedMentions(val)
+			if err != nil {
+				return nil, err
+			}
+			msg.AllowedMentions = *parsed
+		case "reply":
+			msgID := ToInt64(val)
+			if msgID <= 0 {
+				return nil, errors.New(fmt.Sprintf("invalid message id '%s' provided to reply.", ToString(val)))
+			}
+			msg.Reference = &discordgo.MessageReference{
+				MessageID: msgID,
+			}
+		case "silent":
+			if val == nil || val == false {
+				continue
+			}
+			msg.Flags |= discordgo.MessageFlagsSuppressNotifications
+		case "ephemeral":
+			if val == nil || val == false {
+				continue
+			}
+			msg.Flags |= discordgo.MessageFlagsEphemeral
+		case "suppress_embeds":
+			if val == nil || val == false {
+				continue
+			}
+			msg.Flags |= discordgo.MessageFlagsSuppressEmbeds
+		default:
+			componentArgs.Add(key, val)
+		}
+	}
+
+	if len(componentArgs.Components) > 0 {
+		components, err := CreateComponentArray(&msg.Files, componentArgs)
+		if err != nil {
+			return nil, err
+		}
+
+		err = validateTopLevelComponentsCustomIDs(components, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		msg.Components = components
+	}
+	return msg, nil
+}
+
+func (s *ComponentBuilder) ToComplexMessageEdit() (*discordgo.MessageEdit, error) {
+	empty := ""
+	msg := &discordgo.MessageEdit{
+		AllowedMentions: discordgo.AllowedMentions{Parse: []discordgo.AllowedMentionType{discordgo.AllowedMentionTypeUsers}},
+		Flags:           discordgo.MessageFlagsIsComponentsV2,
+		Content:         &empty,
+		Embeds:          []*discordgo.MessageEmbed{},
+	}
+
+	componentArgs := &ComponentBuilder{}
+	for i, key := range s.Components {
+		val := s.Values[i]
+
+		switch strings.ToLower(key) {
+		case "allowed_mentions":
+			if val == nil {
+				msg.AllowedMentions = discordgo.AllowedMentions{}
+				continue
+			}
+			parsed, err := parseAllowedMentions(val)
+			if err != nil {
+				return nil, err
+			}
+			msg.AllowedMentions = *parsed
+		case "silent":
+			if val == nil || val == false {
+				continue
+			}
+			msg.Flags |= discordgo.MessageFlagsSuppressNotifications
+		case "ephemeral":
+			if val == nil || val == false {
+				continue
+			}
+			msg.Flags |= discordgo.MessageFlagsEphemeral
+		case "suppress_embeds":
+			if val == nil || val == false {
+				continue
+			}
+			msg.Flags |= discordgo.MessageFlagsSuppressEmbeds
+		default:
+			componentArgs.Add(key, val)
+		}
+	}
+
+	if len(componentArgs.Components) > 0 {
+		components, err := CreateComponentArray(nil, componentArgs)
+		if err != nil {
+			return nil, err
+		}
+
+		err = validateTopLevelComponentsCustomIDs(components, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		msg.Components = components
+	}
+	return msg, nil
 }
 
 func withOutputLimit(f func(...interface{}) string, limit int) func(...interface{}) (string, error) {

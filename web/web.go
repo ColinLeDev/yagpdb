@@ -91,18 +91,22 @@ func init() {
 
 	Templates = template.New("")
 	Templates = Templates.Funcs(template.FuncMap{
-		"mTemplate":        mTemplate,
-		"hasPerm":          hasPerm,
-		"formatTime":       prettyTime,
-		"checkbox":         tmplCheckbox,
-		"roleOptions":      tmplRoleDropdown,
-		"roleOptionsMulti": tmplRoleDropdownMutli,
+		"mTemplate":               mTemplate,
+		"hasPerm":                 hasPerm,
+		"formatTime":              prettyTime,
+		"checkbox":                tmplCheckbox,
+		"roleOptions":             tmplRoleDropdown,
+		"roleOptionsMulti":        tmplRoleDropdownMulti,
+		"roleOptionsExclude":      tmplRoleDropdownExclude,
+		"roleOptionsMultiExclude": tmplRoleDropdownMultiExclude,
 
-		"textChannelOptions":      tmplChannelOpts([]discordgo.ChannelType{discordgo.ChannelTypeGuildText, discordgo.ChannelTypeGuildNews, discordgo.ChannelTypeGuildVoice, discordgo.ChannelTypeGuildForum}),
-		"textChannelOptionsMulti": tmplChannelOptsMulti([]discordgo.ChannelType{discordgo.ChannelTypeGuildText, discordgo.ChannelTypeGuildNews, discordgo.ChannelTypeGuildVoice, discordgo.ChannelTypeGuildForum}),
+		"textChannelOptions": tmplChannelOpts([]discordgo.ChannelType{discordgo.ChannelTypeGuildText, discordgo.ChannelTypeGuildNews, discordgo.ChannelTypeGuildVoice, discordgo.ChannelTypeGuildForum,
+			discordgo.ChannelTypeGuildStageVoice}),
+		"textChannelOptionsMulti": tmplChannelOptsMulti([]discordgo.ChannelType{discordgo.ChannelTypeGuildText, discordgo.ChannelTypeGuildNews, discordgo.ChannelTypeGuildVoice, discordgo.ChannelTypeGuildForum,
+			discordgo.ChannelTypeGuildStageVoice}),
 
-		"voiceChannelOptions":      tmplChannelOpts([]discordgo.ChannelType{discordgo.ChannelTypeGuildVoice}),
-		"voiceChannelOptionsMulti": tmplChannelOptsMulti([]discordgo.ChannelType{discordgo.ChannelTypeGuildVoice}),
+		"voiceChannelOptions":      tmplChannelOpts([]discordgo.ChannelType{discordgo.ChannelTypeGuildVoice, discordgo.ChannelTypeGuildStageVoice}),
+		"voiceChannelOptionsMulti": tmplChannelOptsMulti([]discordgo.ChannelType{discordgo.ChannelTypeGuildVoice, discordgo.ChannelTypeGuildStageVoice}),
 
 		"catChannelOptions":      tmplChannelOpts([]discordgo.ChannelType{discordgo.ChannelTypeGuildCategory}),
 		"catChannelOptionsMulti": tmplChannelOptsMulti([]discordgo.ChannelType{discordgo.ChannelTypeGuildCategory}),
@@ -439,6 +443,7 @@ func loadCoreHTMLTemplate(path string) {
 const (
 	SidebarCategoryTopLevel       = "Top"
 	SidebarCategoryFeeds          = "Feeds"
+	SidebarCategoryRoles          = "Roles"
 	SidebarCategoryTools          = "Tools"
 	SidebarCategoryFun            = "Fun"
 	SidebarCategoryCore           = "Core"
