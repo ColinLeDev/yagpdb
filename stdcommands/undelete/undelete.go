@@ -79,9 +79,9 @@ var Command = &commands.YAGCommand{
 
 			resp += fmt.Sprintf("%s (%s) **%s** (ID %d): %s\n\n", parsedTime, relativeTime, msg.Author.String(), msg.Author.ID, msg.ContentWithMentionsReplaced())
 			numFound++
-			if numFound == count {
-				break
-			}
+			// if numFound == count {
+			// 	break
+			// }
 		}
 
 		if numFound == 0 {
