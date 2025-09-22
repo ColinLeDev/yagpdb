@@ -109,8 +109,8 @@ func CreateChannelLog(ctx context.Context, config *models.GuildLoggingConfig, gu
 		return nil, ErrChannelBlacklisted
 	}
 
-	if count > 300 {
-		count = 300
+	if count > 1000 {
+		count = 1000
 	}
 
 	msgs, err := bot.GetMessages(guildID, channel.ID, count, true)

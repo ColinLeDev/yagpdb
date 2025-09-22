@@ -34,7 +34,7 @@ func (p *Plugin) RunBackgroundWorker() {
 
 func (p *Plugin) DeleteOldMessages() {
 	started := time.Now()
-	deleted, err := models.Messages2s(qm.SQL("DELETE FROM messages2 WHERE created_at < now() - interval '30 days';")).DeleteAll(context.Background(), common.PQ)
+	deleted, err := models.Messages2s(qm.SQL("DELETE FROM messages2 WHERE created_at < now() - interval '180 days';")).DeleteAll(context.Background(), common.PQ)
 	if err != nil {
 		logger.WithError(err).Error("failed deleting older messages from messages2")
 		return
@@ -44,7 +44,7 @@ func (p *Plugin) DeleteOldMessages() {
 
 func (p *Plugin) DeleteOldMessageLogs() {
 	started := time.Now()
-	deleted, err := models.MessageLogs2s(qm.SQL("DELETE FROM message_logs2 WHERE created_at < now() - interval '30 days';")).DeleteAll(context.Background(), common.PQ)
+	deleted, err := models.MessageLogs2s(qm.SQL("DELETE FROM message_logs2 WHERE created_at < now() - interval '365 days';")).DeleteAll(context.Background(), common.PQ)
 	if err != nil {
 		logger.WithError(err).Error("failed deleting older message logs from message_logs2")
 		return
