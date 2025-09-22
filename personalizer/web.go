@@ -26,6 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
+	"goji.io"
 	"goji.io/pat"
 )
 
@@ -38,14 +39,20 @@ var PageHTML string
 
 func (p *Plugin) InitWeb() {
 	web.AddHTMLTemplate("personalizer/assets/personalizer.html", PageHTML)
-
+	mux := goji.SubMux()
 	// Register routes under control panel mux
-	handler := web.ControllerHandler(handleGetPage, "cp_personalizer")
-	web.CPMux.Handle(pat.Get("/personalizer"), premium.PremiumGuildMW(handler))
-	web.CPMux.Handle(pat.Get("/personalizer/"), premium.PremiumGuildMW(handler))
-
-	postHandler := web.ControllerPostHandler(handlePostUpdate, handler, postForm{})
-	web.CPMux.Handle(pat.Post("/personalizer"), premium.PremiumGuildMW(postHandler))
+	gethandler := web.ControllerHandler(handleGetPage, "cp_personalizer")
+	postHandler := web.ControllerPostHandler(handlePostUpdate, gethandler, postForm{})
+	web.CPMux.Handle(pat.Get("/personalizer"), mux)
+	web.CPMux.Handle(pat.Get("/personalizer/"), mux)
+	web.CPMux.Handle(pat.Post("/personalizer"), mux)
+	mux.Use(web.RequireBotMemberMW)
+	mux.Use(web.RequirePermMW(discordgo.PermissionChangeNickname))
+	mux.Use(premium.PremiumGuildMW)
+	mux.Handle(pat.Get("/"), gethandler)
+	mux.Handle(pat.Get(""), gethandler)
+	mux.Handle(pat.Post("/"), postHandler)
+	mux.Handle(pat.Post(""), postHandler)
 }
 
 type postForm struct {
@@ -86,8 +93,6 @@ func handleGetPage(w http.ResponseWriter, r *http.Request) (web.TemplateData, er
 		"avatar_url": avatarURL,
 		"banner_url": bannerURL,
 	}
-
-	logrus.Info("CurrentMember: ", current)
 
 	tmpl["CurrentMember"] = current
 	return tmpl, nil
@@ -202,7 +207,6 @@ func handlePostUpdate(w http.ResponseWriter, r *http.Request) (web.TemplateData,
 		logrus.WithError(err).Error("Failed to update bot profile")
 		return tmpl.AddAlerts(web.ErrorAlert("Failed to update bot profile, please try again later.")), nil
 	}
-	logrus.Infof("CurrentMember: %#v ", member)
 
 	pg, err := models.FindPersonalizedGuildG(context.Background(), guild.ID)
 	if err != nil && err != sql.ErrNoRows {
