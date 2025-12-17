@@ -704,7 +704,7 @@ func baseContextFuncs(c *Context) {
 	c.addContextFunc("sendComponentMessageRetID", c.tmplSendComponentsMessage(true, true))
 	c.addContextFunc("sendComponentMessage", c.tmplSendComponentsMessage(true, false))
 	c.addContextFunc("sendComponentMessageNoEscape", c.tmplSendComponentsMessage(false, false))
-	c.addContextFunc("sendComponentMessageNoEscapeRetID", c.tmplSendComponentsMessage(false, true
+	c.addContextFunc("sendComponentMessageNoEscapeRetID", c.tmplSendComponentsMessage(false, true))
 	c.addContextFunc("editComponentMessage", c.tmplEditComponentsMessage(true))
 	c.addContextFunc("editComponentMessageNoEscape", c.tmplEditComponentsMessage(false))
 	c.addContextFunc("sendComponentMessageRetID", c.tmplSendComponentsMessage(true, true))
