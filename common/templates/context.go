@@ -744,6 +744,8 @@ func baseContextFuncs(c *Context) {
 
 	c.addContextFunc("setRoles", c.tmplSetRoles)
 
+	c.addContextFunc("getRoleMembers", c.tmplGetRoleMembers)
+
 	// Permission functions
 	c.addContextFunc("hasPermissions", c.tmplHasPermissions)
 	c.addContextFunc("targetHasPermissions", c.tmplTargetHasPermissions)
