@@ -52,7 +52,6 @@ var (
 		"slice":        slice,
 		"split":        strings.Split,
 		"title":        titleCaser.String,
-		"title":        strings.Title,
 		"trim":    		strings.Trim,
 		"trimLeft":		strings.TrimLeft,
 		"trimRight":	strings.TrimRight,
