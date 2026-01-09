@@ -160,6 +160,46 @@ func (alc *LinkTrigger) MergeDuplicates(data []interface{}) interface{} {
 
 /////////////////////////////////////////////////////////////
 
+var _ MessageTrigger = (*NotLinkTrigger)(nil)
+
+type NotLinkTrigger struct{}
+
+func (alc *NotLinkTrigger) Kind() RulePartType {
+	return RulePartTrigger
+}
+
+func (alc *NotLinkTrigger) DataType() interface{} {
+	return nil
+}
+
+func (alc *NotLinkTrigger) Name() (name string) {
+	return "Not a Link"
+}
+
+func (alc *NotLinkTrigger) Description() (description string) {
+	return "Triggers when a message not contains any valid link"
+}
+
+func (lc *LinkTrigger) UserSettings() []*SettingDef {
+	return []*SettingDef{}
+}
+
+func (lc *LinkTrigger) CheckMessage(triggerCtx *TriggerContext, cs *dstate.ChannelState, m *discordgo.Message) (bool, error) {
+	for _, content := range m.GetMessageContents() {
+		if common.LinkRegex.MatchString(common.ForwardSlashReplacer.Replace(content)) {
+			return lc.Presence, nil
+		}
+	}
+	return !lc.Presence, nil
+
+}
+
+func (lc *LinkTrigger) MergeDuplicates(data []interface{}) interface{} {
+	return data[0] // no point in having duplicates of this
+}
+
+/////////////////////////////////////////////////////////////
+
 var _ MessageTrigger = (*WordListTrigger)(nil)
 
 type WordListTrigger struct {
