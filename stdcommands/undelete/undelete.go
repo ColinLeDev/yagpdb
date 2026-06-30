@@ -51,9 +51,7 @@ var Command = &commands.YAGCommand{
 			}
 		}
 		count := data.Switch("count").Int()
-		if count > 10 {
-			count = 10
-		} else if count < 1 {
+		if count < 1 {
 			count = 1
 		}
 
