@@ -55,7 +55,7 @@ var Command = &commands.YAGCommand{
 			count = 1
 		}
 
-		resp := fmt.Sprintf("Last %d deleted message(s) (last hour or 12 hours for premium): \n\n", count)
+		resp := fmt.Sprintf("Last %d deleted message(s): \n\n", count)
 		numFound := 0
 
 		messages := bot.State.GetMessages(data.GuildData.GS.ID, channel.ID, &dstate.MessagesQuery{Limit: 100, IncludeDeleted: true})
