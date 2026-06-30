@@ -123,6 +123,7 @@ var (
 		"structToSdict":     StructToSdict,
 
 		"cslice": CreateSlice,
+		"splitSlice": splitSlice,
 
 		"kindOf": KindOf,
 

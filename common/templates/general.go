@@ -223,6 +223,19 @@ func CreateSlice(values ...interface{}) (Slice, error) {
 	return Slice(slice), nil
 }
 
+func splitSlice(s, sep string) (Slice, error) {
+	split := strings.Split(s, sep)
+	slice, err := CreateSlice()
+	if err != nil {
+		return nil, err
+	}
+	toRange := reflect.ValueOf(&slice).Elem()
+	for _, v := range split {
+		toRange.Set(reflect.Append(toRange, reflect.ValueOf(v)))
+	}
+	return slice, nil
+}
+
 func CreateEmbed(values ...interface{}) (*discordgo.MessageEmbed, error) {
 	if len(values) < 1 {
 		return &discordgo.MessageEmbed{}, nil
