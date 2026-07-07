@@ -223,6 +223,19 @@ func CreateSlice(values ...interface{}) (Slice, error) {
 	return Slice(slice), nil
 }
 
+func splitSlice(s, sep string) (Slice, error) {
+	split := strings.Split(s, sep)
+	if len(split) > MaxSliceLength {
+		return nil, fmt.Errorf("resulting slice exceeds slice size limit")
+	}
+
+	slice := make([]interface{}, 0, len(split))
+	for _, v := range split {
+		slice = append(slice, v)
+	}
+	return Slice(slice), nil
+}
+
 func CreateEmbed(values ...interface{}) (*discordgo.MessageEmbed, error) {
 	if len(values) < 1 {
 		return &discordgo.MessageEmbed{}, nil

@@ -35,8 +35,8 @@ import (
 	"github.com/botlabs-gg/yagpdb/v2/personalizer"
 	"github.com/botlabs-gg/yagpdb/v2/premium"
 	"github.com/botlabs-gg/yagpdb/v2/premium/discordpremiumsource"
-	"github.com/botlabs-gg/yagpdb/v2/premium/patreonpremiumsource"
-	"github.com/botlabs-gg/yagpdb/v2/reddit"
+	// "github.com/botlabs-gg/yagpdb/v2/premium/patreonpremiumsource"
+	// "github.com/botlabs-gg/yagpdb/v2/reddit"
 	"github.com/botlabs-gg/yagpdb/v2/reminders"
 	"github.com/botlabs-gg/yagpdb/v2/reputation"
 	"github.com/botlabs-gg/yagpdb/v2/rolecommands"
@@ -49,7 +49,7 @@ import (
 	"github.com/botlabs-gg/yagpdb/v2/streaming"
 	"github.com/botlabs-gg/yagpdb/v2/tickets"
 	"github.com/botlabs-gg/yagpdb/v2/timezonecompanion"
-	"github.com/botlabs-gg/yagpdb/v2/twitter"
+	// "github.com/botlabs-gg/yagpdb/v2/twitter"
 	"github.com/botlabs-gg/yagpdb/v2/verification"
 	"github.com/botlabs-gg/yagpdb/v2/youtube"
 	// External plugins
@@ -73,7 +73,7 @@ func main() {
 	serverstats.RegisterPlugin()
 	notifications.RegisterPlugin()
 	customcommands.RegisterPlugin()
-	reddit.RegisterPlugin()
+	// reddit.RegisterPlugin()
 	moderation.RegisterPlugin()
 	reputation.RegisterPlugin()
 	streaming.RegisterPlugin()
@@ -90,10 +90,10 @@ func main() {
 	messagecreator.RegisterPlugin()
 	verification.RegisterPlugin()
 	premium.RegisterPlugin()
-	patreonpremiumsource.RegisterPlugin()
+	// patreonpremiumsource.RegisterPlugin()
 	discordpremiumsource.RegisterPlugin()
 	scheduledevents2.RegisterPlugin()
-	twitter.RegisterPlugin()
+	// twitter.RegisterPlugin()
 	rsvp.RegisterPlugin()
 	timezonecompanion.RegisterPlugin()
 	admin.RegisterPlugin()

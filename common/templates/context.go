@@ -54,6 +54,9 @@ var (
 		"slice":        slice,
 		"split":        strings.Split,
 		"title":        titleCaser.String,
+		"trim":    		strings.Trim,
+		"trimLeft":		strings.TrimLeft,
+		"trimRight":	strings.TrimRight,
 		"trimSpace":    strings.TrimSpace,
 		"upper":        strings.ToUpper,
 		"urlescape":    url.PathEscape,
@@ -120,6 +123,7 @@ var (
 		"structToSdict":     StructToSdict,
 
 		"cslice": CreateSlice,
+		"splitSlice": splitSlice,
 
 		"kindOf": KindOf,
 
@@ -740,10 +744,14 @@ func (c *Context) IncreaseCheckCallCounterPremium(key string, normalLimit, premi
 }
 
 func (c *Context) IncreaseCheckGenericAPICall() bool {
-	if c.ExecutedFrom == ExecutedFromEvalCC {
-		return c.IncreaseCheckCallCounter("api_call", 20)
+	factor := 1
+	if c.IsPremium {
+		factor = 10
 	}
-	return c.IncreaseCheckCallCounter("api_call", 100)
+	if c.ExecutedFrom == ExecutedFromEvalCC {
+		return c.IncreaseCheckCallCounter("api_call", 200*factor)
+	}
+	return c.IncreaseCheckCallCounter("api_call", 1000*factor)
 }
 
 func (c *Context) LogEntry() *logrus.Entry {
@@ -785,6 +793,7 @@ func baseContextFuncs(c *Context) {
 
 	// Message send functions
 	c.addContextFunc("sendDM", c.tmplSendDM)
+	c.addContextFunc("sendDMTo", c.tmplSendDMTo)
 
 	//TODO: Remove these component functions
 	c.addContextFunc("sendComponentMessageRetID", c.tmplSendComponentsMessage(true, true))
@@ -806,6 +815,10 @@ func baseContextFuncs(c *Context) {
 	c.addContextFunc("addMessageReactions", c.tmplAddMessageReactions)
 	c.addContextFunc("addReactions", c.tmplAddReactions)
 	c.addContextFunc("addResponseReactions", c.tmplAddResponseReactions)
+	
+	c.addContextFunc("getMessageReactions", c.tmplGetMessageReactionsUserList)
+	c.addContextFunc("whoReacted", c.tmplGetMessageReactionsUserList)
+	c.addContextFunc("getMessageUsersReacted", c.tmplGetMessageReactionsUserList)
 
 	c.addContextFunc("deleteAllMessageReactions", c.tmplDelAllMessageReactions)
 	c.addContextFunc("deleteMessageReaction", c.tmplDelMessageReaction)
@@ -902,6 +915,7 @@ func baseContextFuncs(c *Context) {
 	// Miscellaneous functions
 	c.addContextFunc("onlineCount", c.tmplOnlineCount)
 	c.addContextFunc("onlineCountBots", c.tmplOnlineCountBots)
+	c.addContextFunc("getGuildInvites", c.tmplGuildInvites)
 
 	c.addContextFunc("sleep", c.tmplSleep)
 	c.addContextFunc("sort", c.tmplSort)
