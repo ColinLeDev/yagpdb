@@ -225,15 +225,15 @@ func CreateSlice(values ...interface{}) (Slice, error) {
 
 func splitSlice(s, sep string) (Slice, error) {
 	split := strings.Split(s, sep)
-	slice, err := CreateSlice()
-	if err != nil {
-		return nil, err
+	if len(split) > MaxSliceLength {
+		return nil, fmt.Errorf("resulting slice exceeds slice size limit")
 	}
-	toRange := reflect.ValueOf(&slice).Elem()
+
+	slice := make([]interface{}, 0, len(split))
 	for _, v := range split {
-		toRange.Set(reflect.Append(toRange, reflect.ValueOf(v)))
+		slice = append(slice, v)
 	}
-	return slice, nil
+	return Slice(slice), nil
 }
 
 func CreateEmbed(values ...interface{}) (*discordgo.MessageEmbed, error) {
