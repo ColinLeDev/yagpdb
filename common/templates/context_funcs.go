@@ -1119,6 +1119,59 @@ func (c *Context) tmplGetMessages(channel, before, after interface{}) (messages 
 	return messages, nil
 }
 
+func (c *Context) tmplGetLastMessages(channel interface{}, count int64) (messages []int64, err error) {
+  if c.IncreaseCheckGenericAPICall() {
+    return nil, ErrTooManyAPICalls
+  }
+
+  cID := c.ChannelArgNoDM(channel)
+  if cID == 0 {
+    return nil, nil
+  }
+
+  if count <= 0 {
+    return messages, nil
+  }
+
+  batchLimit := 10
+  batchN := 0
+  var bID int64 = 0
+
+  for batchN < batchLimit && count > 0 {
+    thisBatch := int64(100)
+    if count < thisBatch {
+      thisBatch = count
+    }
+
+    batch, err := common.BotSession.ChannelMessages(cID, int(thisBatch), bID, 0, 0)
+    if err != nil {
+      return nil, err
+    }
+
+    if len(batch) == 0 {
+      return messages, nil
+    }
+
+    batchN++
+
+    for i, m := range batch {
+      messages = append(messages, m.ID)
+
+      if i == len(batch)-1 {
+        bID = m.ID
+      }
+    }
+
+    count -= int64(len(batch))
+
+    if len(batch) < int(thisBatch) {
+      return messages, nil
+    }
+  }
+
+  return messages, nil
+}
+
 func (c *Context) tmplGetMessage(channel, msgID interface{}) (*discordgo.Message, error) {
 	if c.IncreaseCheckGenericAPICall() {
 		return nil, ErrTooManyAPICalls
