@@ -794,6 +794,7 @@ func handleRunCommandNow(w http.ResponseWriter, r *http.Request) (web.TemplateDa
 
 	go pubsub.Publish("custom_commands_run_now", activeGuild.ID, cmd)
 
+	templateData.AddAlerts(web.SucessAlert("Ran the command"))
 	return templateData, nil
 }
 
@@ -899,6 +900,7 @@ func handleUpdateGroup(w http.ResponseWriter, r *http.Request) (web.TemplateData
 	_, err = model.UpdateG(ctx, boil.Infer())
 	if err == nil {
 		go cplogs.RetryAddEntry(web.NewLogEntryFromContext(r.Context(), panelLogKeyUpdatedGroup, &cplogs.Param{Type: cplogs.ParamTypeString, Value: model.Name}))
+		templateData.AddAlerts(web.SucessAlert("Saved group settings"))
 	}
 
 	EvictCustomCommandCache(activeGuild.ID)

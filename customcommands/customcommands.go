@@ -541,7 +541,8 @@ func (cc *CustomCommand) validateContextMenuCommand(tmpl web.TemplateData, guild
 		return false
 	}
 
-	if ok, msg := validateContextMenuData(guildID, cc.Trigger, cc.TriggerType, cc.ID, cc.IsEnabled); !ok {
+	triggerType := triggerTypeFromForm(cc.TriggerTypeForm)
+	if ok, msg := validateContextMenuData(guildID, cc.Trigger, triggerType, cc.ID, cc.IsEnabled); !ok {
 		tmpl.AddAlerts(web.ErrorAlert(msg))
 		return false
 	}

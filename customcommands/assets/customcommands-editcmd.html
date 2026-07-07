@@ -864,7 +864,8 @@
                         <div class="row mt-3" id="interval-cc-run-now">
                             <div class="col">
                                 <button type="submit" class="btn btn-secondary btn-block" title="This will trigger this custom command immediately"
-                                    formaction="/manage/{{$guild}}/customcommands/commands/{{.CC.LocalID}}/update_and_run">Run now</button>
+                                    formaction="/manage/{{$guild}}/customcommands/commands/{{.CC.LocalID}}/update_and_run"
+                                    data-async-form-alertsonly>Run now</button>
                             </div>
                         </div>
                     </form>
