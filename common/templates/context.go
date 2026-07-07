@@ -786,6 +786,7 @@ func baseContextFuncs(c *Context) {
 	c.addContextFunc("editMessage", c.tmplEditMessage(true))
 	c.addContextFunc("editMessageNoEscape", c.tmplEditMessage(false))
 	c.addContextFunc("getMessage", c.tmplGetMessage)
+	c.addContextFunc("getMessages", c.tmplGetMessages)
 	c.addContextFunc("pinMessage", c.tmplPinMessage(false))
 	c.addContextFunc("publishMessage", c.tmplPublishMessage)
 	c.addContextFunc("publishResponse", c.tmplPublishResponse)
